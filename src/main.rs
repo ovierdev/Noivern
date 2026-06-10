@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use clap::{Args, Parser, Subcommand};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
-use cpal::{Device, StreamConfig};
+use cpal::{Device, Sample, SampleFormat, StreamConfig};
 use serde::Serialize;
 use std::fs;
 use std::io::{self, Write};
@@ -137,7 +137,7 @@ fn main() -> Result<()> {
 }
 
 fn setup(args: SetupArgs) -> Result<()> {
-    println!("🎧 Audio Detector Setup");
+    println!("Audio Detector Setup");
     println!("Buscando dispositivos de entrada...\n");
 
     let host = cpal::default_host();
@@ -171,7 +171,7 @@ fn setup(args: SetupArgs) -> Result<()> {
     println!("Formato: {}", sample_format);
 
     println!("\n🧪 Probando micrófono por 3 segundos...");
-    let test = test_microphone(&device, &default_config.into())?;
+    let test = test_microphone(&device, &default_config)?;
 
     println!("RMS: {:.6}", test.rms);
     println!("Peak: {:.6}", test.peak);
@@ -182,7 +182,7 @@ fn setup(args: SetupArgs) -> Result<()> {
 
     fs::write("config.toml", toml_text)?;
 
-    println!("\n💾 Archivo generado: config.toml");
+    println!("\nArchivo generado: config.toml");
 
     Ok(())
 }
@@ -247,7 +247,26 @@ fn choose_recommended_device(devices: &[Device]) -> Result<Device> {
     Ok(devices[0].clone())
 }
 
-fn test_microphone(device: &Device, config: &StreamConfig) -> Result<MicTestResult> {
+fn test_microphone(
+    device: &Device,
+    support_config: &cpal::SupportedStreamConfig,
+) -> Result<MicTestResult> {
+    let sample_format = support_config.sample_format();
+    let config: StreamConfig = support_config.clone().into();
+
+    match sample_format {
+        SampleFormat::F32 => test_microphone_with_format::<f32>(device, &config),
+        SampleFormat::I16 => test_microphone_with_format::<i16>(device, &config),
+        SampleFormat::U16 => test_microphone_with_format::<u16>(device, &config),
+        _ => anyhow::bail!("Formato de muestra no soportado: {:?}", sample_format),
+    }
+}
+
+fn test_microphone_with_format<T>(device: &Device, config: &StreamConfig) -> Result<MicTestResult>
+where
+    T: cpal::Sample + cpal::SizedSample,
+    f32: cpal::Sample + cpal::FromSample<T>,
+{
     let samples = Arc::new(Mutex::new(Vec::<f32>::new()));
     let samples_callback = Arc::clone(&samples);
 
@@ -255,9 +274,13 @@ fn test_microphone(device: &Device, config: &StreamConfig) -> Result<MicTestResu
 
     let stream = device.build_input_stream(
         config,
-        move |data: &[f32], _: &cpal::InputCallbackInfo| {
+        move |data: &[T], _: &cpal::InputCallbackInfo| {
             let mut buffer = samples_callback.lock().unwrap();
-            buffer.extend_from_slice(data);
+
+            for sample in data {
+                let value: f32 = f32::from_sample(*sample);
+                buffer.push(value);
+            }
         },
         err_fn,
         None,
