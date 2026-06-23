@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use clap::{Args, Parser, Subcommand};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{Device, Sample, SampleFormat, StreamConfig};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::{self, Write};
 use std::sync::{Arc, Mutex};
@@ -21,6 +21,7 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     Setup(SetupArgs),
+    Run,
 }
 
 #[derive(Args)]
@@ -34,7 +35,7 @@ struct SetupArgs {
     device: Option<String>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 struct AppConfig {
     app: AppSection,
     input: InputSection,
@@ -47,14 +48,14 @@ struct AppConfig {
     output: OutputSection,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 struct AppSection {
     name: String,
     version: String,
     log_level: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 struct InputSection {
     device_name: String,
     sample_rate: u32,
@@ -63,21 +64,21 @@ struct InputSection {
     backend: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 struct BufferSection {
     buffer_size: u32,
     window_size: u32,
     hop_size: u32,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 struct ProcessingSection {
     normalize: bool,
     highpass_hz: u32,
     lowpass_hz: u32,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 struct FeaturesSection {
     enable_energy: bool,
     enable_zcr: bool,
@@ -86,27 +87,27 @@ struct FeaturesSection {
     mfcc_coeffs: u8,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 struct ClassifierSection {
     #[serde(rename = "type")]
     classifier_type: String,
     threshold: f32,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 struct StorageSection {
     dataset_path: String,
     cache_features: bool,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 struct AiSection {
     enabled: bool,
     model_path: String,
     input_type: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 struct OutputSection {
     mode: String,
     events_file: String,
@@ -131,6 +132,7 @@ fn main() -> Result<()> {
 
     match cli.command {
         Commands::Setup(args) => setup(args)?,
+        Commands::Run => run_detector()?,
     }
 
     Ok(())
@@ -148,7 +150,7 @@ fn setup(args: SetupArgs) -> Result<()> {
         .collect();
 
     if devices.is_empty() {
-        anyhow::bail!("No se encontraron micrófonos conectados.");
+        anyhow::bail!("No se encontraron microfonos conectados.");
     }
 
     let device = select_device(&devices, &args)?;
@@ -158,19 +160,19 @@ fn setup(args: SetupArgs) -> Result<()> {
 
     let default_config = device
         .default_input_config()
-        .context("No se pudo obtener configuración por defecto del micrófono")?;
+        .context("No se pudo obtener configuracion por defecto del microfono")?;
 
     let sample_rate = default_config.sample_rate().0;
     let channels = default_config.channels();
     let sample_format = format!("{:?}", default_config.sample_format()).to_lowercase();
 
-    println!("\n✅ Dispositivo seleccionado:");
+    println!("\n Dispositivo seleccionado:");
     println!("Nombre: {}", device_name);
-    println!("Sample rate: {} Hz", sample_rate);
+    println!("Sample rate: {}", sample_rate);
     println!("Canales: {}", channels);
-    println!("Formato: {}", sample_format);
+    println!("Format: {}", sample_format);
 
-    println!("\n🧪 Probando micrófono por 3 segundos...");
+    println!("\n Probando microfono por 3 segundos...");
     let test = test_microphone(&device, &default_config)?;
 
     println!("RMS: {:.6}", test.rms);
@@ -199,13 +201,11 @@ fn select_device(devices: &[Device], args: &SetupArgs) -> Result<Device> {
                 return Ok(device.clone());
             }
         }
-
-        anyhow::bail!("No se encontró dispositivo que contenga: {}", name_filter);
+        anyhow::bail!("No se encontro dispositivo que contenga: {}", name_filter);
     }
 
     if args.auto {
-        let recommended = choose_recommended_device(devices)?;
-        return Ok(recommended);
+        return choose_recommended_device(devices);
     }
 
     for (index, device) in devices.iter().enumerate() {
@@ -215,7 +215,7 @@ fn select_device(devices: &[Device], args: &SetupArgs) -> Result<Device> {
         println!("[{}] {}", index, name);
     }
 
-    print!("\nSeleccione dispositivo: ");
+    println!("\nSeleccione dispositivo: ");
     io::stdout().flush()?;
 
     let mut input = String::new();
@@ -224,11 +224,11 @@ fn select_device(devices: &[Device], args: &SetupArgs) -> Result<Device> {
     let selected_index: usize = input
         .trim()
         .parse()
-        .context("Debe ingresar un número válido")?;
+        .context("Debe ingresar un numero valido")?;
 
     let device = devices
         .get(selected_index)
-        .context("Índice de dispositivo inválido")?;
+        .context("Indice de dispositivo invalido")?;
 
     Ok(device.clone())
 }
@@ -238,21 +238,20 @@ fn choose_recommended_device(devices: &[Device]) -> Result<Device> {
         let name = device.name().unwrap_or_default().to_lowercase();
 
         if name.contains("usb") {
-            println!("Auto: usando micrófono USB recomendado.");
+            println!("Auto: usando microfono USB recomendado.");
             return Ok(device.clone());
         }
     }
-
     println!("Auto: usando primer dispositivo disponible.");
     Ok(devices[0].clone())
 }
 
 fn test_microphone(
     device: &Device,
-    support_config: &cpal::SupportedStreamConfig,
+    supported_config: &cpal::SupportedStreamConfig,
 ) -> Result<MicTestResult> {
-    let sample_format = support_config.sample_format();
-    let config: StreamConfig = support_config.clone().into();
+    let sample_format = supported_config.sample_format();
+    let config: StreamConfig = supported_config.clone().into();
 
     match sample_format {
         SampleFormat::F32 => test_microphone_with_format::<f32>(device, &config),
@@ -265,12 +264,12 @@ fn test_microphone(
 fn test_microphone_with_format<T>(device: &Device, config: &StreamConfig) -> Result<MicTestResult>
 where
     T: cpal::Sample + cpal::SizedSample,
-    f32: cpal::Sample + cpal::FromSample<T>,
+    f32: cpal::FromSample<T>,
 {
     let samples = Arc::new(Mutex::new(Vec::<f32>::new()));
     let samples_callback = Arc::clone(&samples);
 
-    let err_fn = |err| eprintln!("Error en stream de audio: {}", err);
+    let err_fn = |err| eprintln!("Error en stream de auido: {}", err);
 
     let stream = device.build_input_stream(
         config,
@@ -293,7 +292,7 @@ where
     let buffer = samples.lock().unwrap();
 
     if buffer.is_empty() {
-        anyhow::bail!("No se capturaron muestras del micrófono.");
+        anyhow::bail!("No se capturaron muestras del microfono.");
     }
 
     let rms = calculate_rms(&buffer);
@@ -306,8 +305,117 @@ where
     } else {
         MicStatus::Ok
     };
-
     Ok(MicTestResult { rms, peak, status })
+}
+
+fn run_detector() -> Result<()> {
+    println!("Audio Detector RUN");
+    println!("Cargando config.toml...\n");
+
+    let config_text = fs::read_to_string("config.toml")
+        .context("No se pudo leer config.toml. Ejecuta primero: cargo run -- setup")?;
+
+    let app_config: AppConfig =
+        toml::from_str(&config_text).context("No se pudo parsear config.toml")?;
+
+    let host = cpal::default_host();
+
+    let device = find_input_device(&host, &app_config.input.device_name)
+        .context("No se pudo encontrar el dispositivo configurado")?;
+
+    println!("Microfono: {}", app_config.input.device_name);
+    println!("Threshold: {}", app_config.classifier.threshold);
+    println!("Presiona Ctrl+C para detener.\n");
+
+    let supported_config = device
+        .default_input_config()
+        .context("No se pudo obtener configuracion por defector del dispositivo")?;
+
+    let sample_format = supported_config.sample_format();
+    let stream_config: StreamConfig = supported_config.into();
+
+    match sample_format {
+        SampleFormat::F32 => run_stream::<f32>(
+            &device,
+            &stream_config,
+            app_config.classifier.threshold,
+            app_config.buffer.window_size as usize,
+        )?,
+        SampleFormat::I16 => run_stream::<i16>(
+            &device,
+            &stream_config,
+            app_config.classifier.threshold,
+            app_config.buffer.window_size as usize,
+        )?,
+        SampleFormat::U16 => run_stream::<u16>(
+            &device,
+            &stream_config,
+            app_config.classifier.threshold,
+            app_config.buffer.window_size as usize,
+        )?,
+        _ => anyhow::bail!("Formato de muesta no soportado: {:?}", sample_format),
+    }
+    Ok(())
+}
+
+fn find_input_device(host: &cpal::Host, device_name: &str) -> Result<Device> {
+    let devices = host
+        .input_devices()
+        .context("No se pudieron leer dispositivos de entrada")?;
+
+    for device in devices {
+        let name = device.name().unwrap_or_default();
+        if name == device_name || name.to_lowercase().contains(&device_name.to_lowercase()) {
+            return Ok(device);
+        }
+    }
+    anyhow::bail!("Dispositivo no encontrado: {}", device_name);
+}
+
+fn run_stream<T>(
+    device: &Device,
+    config: &StreamConfig,
+    threshold: f32,
+    window_size: usize,
+) -> Result<()>
+where
+    T: cpal::Sample + cpal::SizedSample,
+    f32: cpal::FromSample<T>,
+{
+    let frame_samples = Arc::new(Mutex::new(Vec::<f32>::new()));
+    let frame_samples_callback = Arc::clone(&frame_samples);
+
+    let err_fn = |err| eprintln!("Error en stream de auido: {}", err);
+
+    let stream = device.build_input_stream(
+        config,
+        move |data: &[T], _: &cpal::InputCallbackInfo| {
+            let mut buffer = frame_samples_callback.lock().unwrap();
+
+            for sample in data {
+                let value: f32 = f32::from_sample(*sample);
+                buffer.push(value);
+            }
+
+            if buffer.len() >= window_size {
+                let rms = calculate_rms(&buffer[..window_size]);
+
+                if rms >= threshold {
+                    println!("[SOUND] rms ={:.6}", rms);
+                } else {
+                    println!("[SILENCE] rms={:.6}", rms);
+                }
+                buffer.clear();
+            }
+        },
+        err_fn,
+        None,
+    )?;
+    stream.play()?;
+
+    loop {
+        thread::sleep(Duration::from_secs(1));
+    }
 }
 
 fn calculate_rms(samples: &[f32]) -> f32 {
@@ -330,7 +438,7 @@ fn build_config(
 ) -> AppConfig {
     AppConfig {
         app: AppSection {
-            name: "audio-detector".into(),
+            name: "audio-detecvtor".into(),
             version: "0.1.0".into(),
             log_level: "info".into(),
         },
@@ -360,16 +468,16 @@ fn build_config(
         },
         classifier: ClassifierSection {
             classifier_type: "basic".into(),
-            threshold: 0.7,
+            threshold: 0.01,
         },
         storage: StorageSection {
-            dataset_path: "./data".into(),
+            dataset_path: "/.data".into(),
             cache_features: true,
         },
         ai: AiSection {
             enabled: false,
-            model_path: "./model.onnx".into(),
-            input_type: "spectrogram".into(),
+            model_path: "/.model.onnx".into(),
+            input_type: "spactrogram".into(),
         },
         output: OutputSection {
             mode: "stdout".into(),

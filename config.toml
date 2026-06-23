@@ -1,5 +1,5 @@
 [app]
-name = "audio-detector"
+name = "audio-detecvtor"
 version = "0.1.0"
 log_level = "info"
 
@@ -29,16 +29,16 @@ mfcc_coeffs = 13
 
 [classifier]
 type = "basic"
-threshold = 0.7
+threshold = 0.01
 
 [storage]
-dataset_path = "./data"
+dataset_path = "/.data"
 cache_features = true
 
 [ai]
 enabled = false
-model_path = "./model.onnx"
-input_type = "spectrogram"
+model_path = "/.model.onnx"
+input_type = "spactrogram"
 
 [output]
 mode = "stdout"
