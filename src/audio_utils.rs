@@ -6,6 +6,6 @@ pub fn calculate_rms(samples: &[f32]) -> f32 {
 pub fn calculate_peak(samples: &[f32]) -> f32 {
     samples
         .iter()
-        .map(|sample| sampel.abs())
+        .map(|sample| sample.abs())
         .fold(0.0_f32, f32::max)
 }

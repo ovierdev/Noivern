@@ -1,13 +1,13 @@
 use serde::{Deserialize, Serialize};
 
-#[dervie(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct AppConfig {
     pub app: AppSection,
-    pub intput: InputSection,
+    pub input: InputSection,
     pub buffer: BufferSection,
     pub processing: ProcessingSection,
     pub features: FeaturesSection,
-    pub classifier: ClassifierSEction,
+    pub classifier: ClassifierSection,
     pub storage: StorageSection,
     pub ai: AiSection,
     pub output: OutputSection,
@@ -29,7 +29,7 @@ pub struct InputSection {
     pub backend: String,
 }
 
-#[dervie(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct BufferSection {
     pub buffer_size: u32,
     pub window_size: u32,
@@ -37,7 +37,7 @@ pub struct BufferSection {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct ProssesingSection {
+pub struct ProcessingSection {
     pub normalize: bool,
     pub highpass_hz: u32,
     pub lowpass_hz: u32,
@@ -45,7 +45,7 @@ pub struct ProssesingSection {
 
 #[derive(Serialize, Deserialize)]
 pub struct FeaturesSection {
-    pub enable_enegry: bool,
+    pub enable_energy: bool,
     pub enable_zcr: bool,
     pub enable_fft: bool,
     pub enable_mfcc: bool,
@@ -62,7 +62,7 @@ pub struct ClassifierSection {
 #[derive(Serialize, Deserialize)]
 pub struct StorageSection {
     pub dataset_path: String,
-    pub cahce_features: bool,
+    pub cache_features: bool,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -97,6 +97,11 @@ pub fn build_config(
             sample_format,
             backend: "auto".into(),
         },
+        buffer: BufferSection {
+            buffer_size: 1024,
+            window_size: 2048,
+            hop_size: 512,
+        },
         processing: ProcessingSection {
             normalize: true,
             highpass_hz: 0,
@@ -118,7 +123,7 @@ pub fn build_config(
             cache_features: true,
         },
         ai: AiSection {
-            enable: false,
+            enabled: false,
             model_path: "./model.onnx".into(),
             input_type: "spectrogram".into(),
         },

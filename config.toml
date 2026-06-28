@@ -1,5 +1,5 @@
 [app]
-name = "audio-detecvtor"
+name = "audio-detector"
 version = "0.1.0"
 log_level = "info"
 
@@ -32,13 +32,13 @@ type = "basic"
 threshold = 0.01
 
 [storage]
-dataset_path = "/.data"
+dataset_path = "./data"
 cache_features = true
 
 [ai]
 enabled = false
-model_path = "/.model.onnx"
-input_type = "spactrogram"
+model_path = "./model.onnx"
+input_type = "spectrogram"
 
 [output]
 mode = "stdout"
