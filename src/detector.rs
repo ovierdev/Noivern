@@ -1,4 +1,4 @@
-use crate::audio_utils::calculate_rms;
+use crate::audio_utils::{calculate_rms, calculate_zcr};
 use crate::config::AppConfig;
 use anyhow::{Context, Result};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
@@ -97,12 +97,17 @@ where
             }
 
             if buffer.len() >= window_size {
-                let rms = calculate_rms(&buffer[..window_size]);
+                let frame = &buffer[..window_size];
 
-                if rms >= threshold {
-                    println!("[SOUND]   rms={:.6}", rms);
+                let rms = calculate_rms(frame);
+                let zcr = calculate_zcr(frame);
+
+                if rms < threshold {
+                    println!("[SILENCE] rms = {:.6} zcr={:.6}", rms, zcr);
+                } else if zcr > 0.01 {
+                    println!("[NOISY] rms = {:.6} zcr = {:.6}", rms, zcr);
                 } else {
-                    println!("[SILENCE] rms={:.6}", rms);
+                    println!("[SOUND] rms= {:.6} zcr={:.6}", rms, zcr);
                 }
 
                 buffer.clear();
