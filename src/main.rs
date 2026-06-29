@@ -1,8 +1,9 @@
 mod audio_utils;
+mod classifier;
 mod config;
 mod detector;
+mod features;
 mod setup;
-
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use setup::SetupArgs;

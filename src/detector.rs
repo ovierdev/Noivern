@@ -1,5 +1,6 @@
-use crate::audio_utils::{calculate_rms, calculate_zcr};
+use crate::classifier::{SoundClass, classify_basic};
 use crate::config::AppConfig;
+use crate::features::extract_features;
 use anyhow::{Context, Result};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{Device, Sample, SampleFormat, StreamConfig};
@@ -99,15 +100,25 @@ where
             if buffer.len() >= window_size {
                 let frame = &buffer[..window_size];
 
-                let rms = calculate_rms(frame);
-                let zcr = calculate_zcr(frame);
+                let features = extract_features(frame);
+                let class = classify_basic(features, threshold);
 
-                if rms < threshold {
-                    println!("[SILENCE] rms = {:.6} zcr={:.6}", rms, zcr);
-                } else if zcr > 0.01 {
-                    println!("[NOISY] rms = {:.6} zcr = {:.6}", rms, zcr);
-                } else {
-                    println!("[SOUND] rms= {:.6} zcr={:.6}", rms, zcr);
+                match class {
+                    SoundClass::Silence => {
+                        println!(
+                            "[Silence] rms = {:.6} zcr = {:.6}",
+                            features.rms, features.zcr
+                        );
+                    }
+                    SoundClass::Sound => {
+                        println!(
+                            "[Sound] rms = {:.6} zcr = {:.6}",
+                            features.rms, features.zcr
+                        );
+                    }
+                    SoundClass::Noisy => {
+                        println!("[NOISY] rms =  {:.6} zcr={:.6}", features.rms, features.zcr);
+                    }
                 }
 
                 buffer.clear();

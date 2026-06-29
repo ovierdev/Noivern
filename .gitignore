@@ -1,1 +1,6 @@
 /target
+config.toml
+events.log
+*.wav
+*.mp3
+*.flac
