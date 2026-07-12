@@ -3,7 +3,9 @@ mod classifier;
 mod config;
 mod detector;
 mod features;
+mod hardware;
 mod setup;
+
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use setup::SetupArgs;
@@ -30,7 +32,7 @@ fn main() -> Result<()> {
     match cli.command {
         Commands::Setup(args) => setup::setup(args)?,
         Commands::Run => detector::run_detector()?,
-        Commands::Devices => setup::list_devices()?,
+        Commands::Devices => hardware::list_devices()?,
     }
 
     Ok(())
