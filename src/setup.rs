@@ -204,3 +204,40 @@ where
 
     Ok(MicTestResult { rms, peak, status })
 }
+
+pub fn list_devices() -> Result<()> {
+    println!("Input Devices\n");
+
+    let host = cpal::default_host();
+
+    let devices: Vec<Device> = host
+        .input_devices()
+        .context("No se pudieron leer dispositivos de entrada")?
+        .collect();
+
+    if devices.is_empty() {
+        println!("No se encontraron dispositivos de entrada.");
+        return Ok(());
+    }
+
+    for (index, devices) in devices.iter().enumerate() {
+        let name = devices
+            .name()
+            .unwrap_or_else(|_| "Dispositivo desconocido".into());
+
+        println!("[{}] {}", index, name);
+
+        match devices.default_input_config() {
+            Ok(config) => {
+                println!("  sample rate: {} Hz", config.sample_rate().0);
+                println!("  channels: {}", config.channels());
+                println!("  format: {:?}", config.sample_format());
+            }
+            Err(_) => {
+                println!("  no se puede leer configucaion por defecto");
+            }
+        }
+        println!();
+    }
+    Ok(())
+}

@@ -21,6 +21,7 @@ struct Cli {
 enum Commands {
     Setup(SetupArgs),
     Run,
+    Devices,
 }
 
 fn main() -> Result<()> {
@@ -29,6 +30,7 @@ fn main() -> Result<()> {
     match cli.command {
         Commands::Setup(args) => setup::setup(args)?,
         Commands::Run => detector::run_detector()?,
+        Commands::Devices => setup::list_devices()?,
     }
 
     Ok(())
