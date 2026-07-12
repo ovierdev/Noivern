@@ -5,6 +5,7 @@ mod detector;
 mod features;
 mod hardware;
 mod setup;
+mod test;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
@@ -24,6 +25,7 @@ enum Commands {
     Setup(SetupArgs),
     Run,
     Devices,
+    Test,
 }
 
 fn main() -> Result<()> {
@@ -33,6 +35,7 @@ fn main() -> Result<()> {
         Commands::Setup(args) => setup::setup(args)?,
         Commands::Run => detector::run_detector()?,
         Commands::Devices => hardware::list_devices()?,
+        Commands::Test => test::run_test()?,
     }
 
     Ok(())
