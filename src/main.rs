@@ -2,6 +2,7 @@ mod audio_utils;
 mod classifier;
 mod config;
 mod detector;
+mod doctor;
 mod features;
 mod hardware;
 mod setup;
@@ -26,6 +27,7 @@ enum Commands {
     Run,
     Devices,
     Test,
+    Doctor,
 }
 
 fn main() -> Result<()> {
@@ -36,6 +38,7 @@ fn main() -> Result<()> {
         Commands::Run => detector::run_detector()?,
         Commands::Devices => hardware::list_devices()?,
         Commands::Test => test::run_test()?,
+        Commands::Doctor => doctor::run_doctor()?,
     }
 
     Ok(())

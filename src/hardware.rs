@@ -77,7 +77,7 @@ pub fn select_device(
     select_device_interactive(devices)
 }
 
-fn find_device_by_name(devices: &[Device], filter: &str) -> Result<Device> {
+pub fn find_device_by_name(devices: &[Device], filter: &str) -> Result<Device> {
     let filter = filter.to_lowercase();
 
     for device in devices {
