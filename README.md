@@ -91,11 +91,21 @@ main.rs
 ### Linux x86_64
 
 ```bash
-curl -L https://github.com/<USER>/<REPOSITORY>/releases/latest/download/audio-detector-linux-x86_64 \
--o audio-detector
+## Download
 
-chmod +x audio-detector
+Download the latest compatible Linux binary into the current directory:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ovierdev/Noivern/main/download.sh | bash
 ```
+Then run:
+
+./audio-detector --help
+./audio-detector setup
+./audio-detector run
+
+The download script does not install anything system-wide and does not require sudo.
+
 
 ### Raspberry Pi (ARM64)
 
