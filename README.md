@@ -83,59 +83,179 @@ main.rs
 ```
 
 ---
+# Getting Started
 
-# Installation
+At this stage (v0.1.0), Noivern is intended for early testing and community feedback.
 
-## Download a precompiled binary
+Precompiled binaries will be available in future releases. For now, please build the project locally.
 
-### Linux x86_64
+---
 
-```bash
-## Download
+# Requirements
 
-Download the latest compatible Linux binary into the current directory:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/ovierdev/Noivern/main/download.sh | bash
-```
-Then run:
-
-./audio-detector --help
-./audio-detector setup
-./audio-detector run
-
-The download script does not install anything system-wide and does not require sudo.
-
-
-### Raspberry Pi (ARM64)
-
-```bash
-curl -L https://github.com/<USER>/<REPOSITORY>/releases/latest/download/audio-detector-rpi-aarch64 \
--o audio-detector
-
-chmod +x audio-detector
-```
-
-### Build from source
-
-Requirements:
-
+* Linux (Fedora, Ubuntu, Debian, Raspberry Pi OS or compatible)
 * Rust (stable)
 * Cargo
+* ALSA development libraries
+
+Ubuntu / Debian / Raspberry Pi OS
 
 ```bash
-git clone https://github.com/<USER>/<REPOSITORY>.git
+sudo apt update
 
-cd <REPOSITORY>
+sudo apt install -y \
+    build-essential \
+    pkg-config \
+    libasound2-dev
+```
 
+Fedora
+
+```bash
+sudo dnf install \
+    gcc \
+    pkgconf-pkg-config \
+    alsa-lib-devel
+```
+
+Install Rust
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+Reload your shell
+
+```bash
+source "$HOME/.cargo/env"
+```
+
+Verify the installation
+
+```bash
+rustc --version
+cargo --version
+```
+
+---
+
+# Clone the project
+
+```bash
+git clone https://github.com/ovierdev/Noivern.git
+
+cd Noivern
+```
+
+---
+
+# Build
+
+Development build
+
+```bash
+cargo build
+```
+
+Optimized release build
+
+```bash
 cargo build --release
 ```
 
-Binary location:
+Executable location
 
 ```text
 target/release/audio-detector
 ```
+
+---
+
+# Quick Test
+
+List available microphones
+
+```bash
+./target/release/audio-detector devices
+```
+
+Configure the microphone
+
+```bash
+./target/release/audio-detector setup
+```
+
+Run diagnostics
+
+```bash
+./target/release/audio-detector doctor
+```
+
+Test the microphone
+
+```bash
+./target/release/audio-detector test
+```
+
+Record a sample
+
+```bash
+./target/release/audio-detector record
+```
+
+Run the detector
+
+```bash
+./target/release/audio-detector run
+```
+
+---
+
+# Raspberry Pi
+
+Noivern can also be compiled directly on a Raspberry Pi running a 64-bit Linux distribution.
+
+The build process is exactly the same:
+
+```bash
+git clone https://github.com/ovierdev/Noivern.git
+
+cd Noivern
+
+cargo build --release
+```
+
+The executable will be generated in:
+
+```text
+target/release/audio-detector
+```
+
+---
+
+# Feedback
+
+This is an early public release.
+
+If you encounter any issues, please include the following information when opening a GitHub Issue:
+
+* Operating System
+* Linux distribution
+* CPU architecture (`uname -m`)
+* Rust version (`rustc --version`)
+* Output of:
+
+```bash
+./target/release/audio-detector doctor
+```
+
+and
+
+```bash
+./target/release/audio-detector devices
+```
+
+This information will help reproduce and fix issues much faster.
 
 ---
 
