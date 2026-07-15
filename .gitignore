@@ -4,3 +4,7 @@ events.log
 *.wav
 *.mp3
 *.flac
+
+/audio-detector
+/audio-detector-linux-x86_64
+/audio-detector-linux-aarch64
