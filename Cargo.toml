@@ -1,5 +1,5 @@
 [package]
-name = "Noivern"
+name = "audio-detector"
 version = "0.1.0"
 edition = "2024"
 

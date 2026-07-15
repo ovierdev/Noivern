@@ -99,7 +99,7 @@ fn write_wav(output: &PathBuf, samples: &[f32], sample_rate: u32, channels: u16)
 
     writer
         .finalize()
-        .context("No se pudo finalizar el archivo WAV");
+        .context("No se pudo finalizar el archivo WAV")?;
 
     Ok(())
 }
