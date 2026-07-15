@@ -12,16 +12,16 @@ Noivern is a lightweight command-line application for real-time audio detection 
 
 Current version: **v0.1.0**
 
-* 🎤 Interactive microphone setup
-* 🔍 Automatic input device detection
-* ⚙️ Manual device selection
-* 📄 Automatic `config.toml` generation
-* 🎧 Real-time audio monitoring
-* 📊 RMS (Root Mean Square)
-* 📈 ZCR (Zero Crossing Rate)
-* 🔬 Basic sound classification
-* 🩺 Hardware diagnostics
-* 🎙️ Audio recording to WAV
+* Interactive microphone setup
+* Automatic input device detection
+* Manual device selection
+* Automatic `config.toml` generation
+* Real-time audio monitoring
+* RMS (Root Mean Square)
+* ZCR (Zero Crossing Rate)
+* Basic sound classification
+* Hardware diagnostics
+* Audio recording to WAV
 
 Current sound labels:
 
