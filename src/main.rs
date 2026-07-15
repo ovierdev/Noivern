@@ -5,11 +5,13 @@ mod detector;
 mod doctor;
 mod features;
 mod hardware;
+mod record;
 mod setup;
 mod test;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
+use record::RecordArgs;
 use setup::SetupArgs;
 
 #[derive(Parser)]
@@ -28,6 +30,7 @@ enum Commands {
     Devices,
     Test,
     Doctor,
+    Record(RecordArgs),
 }
 
 fn main() -> Result<()> {
@@ -39,6 +42,7 @@ fn main() -> Result<()> {
         Commands::Devices => hardware::list_devices()?,
         Commands::Test => test::run_test()?,
         Commands::Doctor => doctor::run_doctor()?,
+        Commands::Record(args) => record::run_record(args)?,
     }
 
     Ok(())

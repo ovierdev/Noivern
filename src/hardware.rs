@@ -139,64 +139,12 @@ pub fn test_microphone(
     supported_config: &cpal::SupportedStreamConfig,
     duration: Duration,
 ) -> Result<MicTestResult> {
-    let sample_format = supported_config.sample_format();
-    let stream_config: StreamConfig = supported_config.clone().into();
-
-    match sample_format {
-        SampleFormat::F32 => test_microphone_with_format::<f32>(device, &stream_config, duration),
-        SampleFormat::I16 => test_microphone_with_format::<i16>(device, &stream_config, duration),
-        SampleFormat::U16 => test_microphone_with_format::<u16>(device, &stream_config, duration),
-        _ => anyhow::bail!("Formato de muestra no soportado: {sample_format:?}"),
-    }
-}
-
-fn test_microphone_with_format<T>(
-    device: &Device,
-    config: &StreamConfig,
-    duration: Duration,
-) -> Result<MicTestResult>
-where
-    T: cpal::Sample + cpal::SizedSample,
-    f32: cpal::FromSample<T>,
-{
-    let samples = Arc::new(Mutex::new(Vec::<f32>::new()));
-    let samples_callback = Arc::clone(&samples);
-
-    let err_fn = |error| {
-        eprintln!("Error en el stream de audio: {error}");
-    };
-
-    let stream = device.build_input_stream(
-        config,
-        move |data: &[T], _: &cpal::InputCallbackInfo| {
-            let Ok(mut buffer) = samples_callback.lock() else {
-                eprintln!("No se pudo bloquear el buffer de audio");
-                return;
-            };
-            buffer.extend(data.iter().map(|sample| f32::from_sample(*sample)));
-        },
-        err_fn,
-        None,
-    )?;
-
-    stream.play()?;
-    thread::sleep(duration);
-    drop(stream);
-
-    let buffer = samples
-        .lock()
-        .map_err(|_| anyhow::anyhow!("No se pudo acceder al buffer de audio"))?;
-
-    if buffer.is_empty() {
-        anyhow::bail!("No se capturaron muestras del microfono.");
-    }
-
-    let rms = calculate_rms(&buffer);
-    let peak = calculate_peak(&buffer);
-
+    let samples = capture_audio(device, supported_config, duration)?;
+    let rms = calculate_rms(&samples);
+    let peak = calculate_peak(&samples);
     let status = determine_microphone_status(rms, peak);
 
-    Ok(MicTestResult { rms, peak, status })
+    Ok(MicTestResult { peak, rms, status })
 }
 
 fn determine_microphone_status(rms: f32, peak: f32) -> MicStatus {
@@ -207,4 +155,65 @@ fn determine_microphone_status(rms: f32, peak: f32) -> MicStatus {
     } else {
         MicStatus::Ok
     }
+}
+
+pub fn capture_audio(
+    device: &Device,
+    supported_config: &cpal::SupportedStreamConfig,
+    duration: Duration,
+) -> Result<Vec<f32>> {
+    let sample_format = supported_config.sample_format();
+    let stream_config: StreamConfig = supported_config.clone().into();
+
+    match sample_format {
+        SampleFormat::F32 => capture_audio_with_format::<f32>(device, &stream_config, duration),
+        SampleFormat::I16 => capture_audio_with_format::<i16>(device, &stream_config, duration),
+        SampleFormat::U16 => capture_audio_with_format::<u16>(device, &stream_config, duration),
+        _ => anyhow::bail!("Format sample no support: {sample_format:?}"),
+    }
+}
+
+fn capture_audio_with_format<T>(
+    device: &Device,
+    config: &StreamConfig,
+    duration: Duration,
+) -> Result<Vec<f32>>
+where
+    T: cpal::Sample + cpal::SizedSample,
+    f32: cpal::FromSample<T>,
+{
+    let samples = Arc::new(Mutex::new(Vec::<f32>::new()));
+    let callback_samples = Arc::clone(&samples);
+
+    let error_callback = |error| {
+        eprintln!("Error en el sistema de audio: {error}");
+    };
+
+    let stream = device.build_input_stream(
+        config,
+        move |data: &[T], _: &cpal::InputCallbackInfo| {
+            let Ok(mut buffer) = callback_samples.lock() else {
+                eprintln!("No se pudo acceder al buffer de audio.");
+                return;
+            };
+            buffer.extend(data.iter().map(|sample| f32::from_sample(*sample)));
+        },
+        error_callback,
+        None,
+    )?;
+
+    stream.play()?;
+    thread::sleep(duration);
+    drop(stream);
+
+    let captured_samples = samples
+        .lock()
+        .map_err(|_| anyhow::anyhow!("No se pudo acceder al audio capturado"))?
+        .clone();
+
+    if captured_samples.is_empty() {
+        anyhow::bail!("No se capturaron muestras del microfono.");
+    }
+
+    Ok(captured_samples)
 }
