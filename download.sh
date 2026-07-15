@@ -5,7 +5,7 @@ set -euo pipefail
 REPOSITORY="ovierdev/Noivern"
 OUTPUT_FILE="audio-detector"
 
-echo "🎧 Noivern Binary Downloader"
+echo "Noivern Binary Downloader"
 echo "============================"
 
 OS="$(uname -s)"
