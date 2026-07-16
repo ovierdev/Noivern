@@ -3,6 +3,8 @@ mod classifier;
 mod config;
 mod detector;
 mod doctor;
+mod event;
+mod event_logger;
 mod features;
 mod hardware;
 mod record;

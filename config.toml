@@ -4,7 +4,7 @@ version = "0.1.0"
 log_level = "info"
 
 [input]
-device_name = "Brio 100"
+device_name = "GXTrust Emita II"
 sample_rate = 44100
 channels = 2
 sample_format = "f32"
